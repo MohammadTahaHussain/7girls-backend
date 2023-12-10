@@ -1,0 +1,4 @@
+runtime: nodejs20
+service: 
+env_variables:
+  MONGO_DB_URI : mongodb+srv://8salman:PakistanKhi21_1947@fence-web-project.5srhedv.mongodb.net/?retryWrites=true&w=majority&appName=AtlasApp
