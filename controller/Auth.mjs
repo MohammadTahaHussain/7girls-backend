@@ -74,7 +74,7 @@ const checkOut = async (req, res) => {
           quantity: item.quantity,
         };
       }),
-      success_url: "https://7girls-frontend.vercel.app/members",
+      success_url: `https://7girls-frontend.vercel.app/success?session_id={session_id}&plan=${req.body.items?.plan}&uid=${req.body?.items?.uid}`,
       cancel_url: "https://7girls-frontend.vercel.app/members",
     });
 
