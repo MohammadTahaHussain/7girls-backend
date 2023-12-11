@@ -10,6 +10,8 @@ import Design from "../modal/designIdSchema.mjs";
 const stripe = new Stripe('sk_test_51Nsoi4JNIfFBCw6D9VvsUIxl3IpIIfAMOkn9PaFHjBEzvVIi40S3OseeEYewmCU8afY6lF6X7jrEFxkIbrzlUFsX005xGS2rmi', {
   apiVersion: "2020-08-27",
 });
+import express from 'express'
+const app = express()
 
 const createUser = async (req, res) => {
   try {
@@ -57,25 +59,14 @@ const LoginUser = async (req, res) => {
   return res.json({ status: "error", error: "Invalid Password" });
 };
 
+
 const checkOut = async (req, res) => {
   try {
     const sessions = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment", // Corrected typo here
-      line_items: req.body.items.map((item) => {
-        return {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: item.name,
-            },
-            unit_amount: item.price * 100,
-          },
-          quantity: item.quantity,
-        };
-      }),
-      success_url: `http://7girls-frontend.vercel.app/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.items[0]?.name}&uid=${req.body?.items[0]?.uid}`,
-      cancel_url: "https://7girls-frontend.vercel.app/members",
+      // ... (your existing code)
+
+      success_url: `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.items[0]?.name}&uid=${req.body?.items[0]?.uid}`,
+      cancel_url: "http://localhost:3000/members",
     });
 
     res.json({ url: sessions.url });
@@ -84,5 +75,32 @@ const checkOut = async (req, res) => {
   }
 };
 
+
+// Handle Stripe webhook events
+app.post('/webhook/stripe', async (req, res) => {
+  const payload = req.body;
+  const sig = req.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(payload, sig, "whsec_QsIuwmmzwKFKGnXEzYpH3B8jU1oZNomU");
+  } catch (err) {
+    console.error('Webhook Error:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+
+    // Perform any actions you want here
+    console.log('Alhamdulillah')
+
+    console.log('Payment successful! Session ID:', session.id);
+  }
+
+  res.status(200).end();
+});
 
 export { createUser, LoginUser, checkOut };
