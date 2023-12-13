@@ -58,6 +58,7 @@ const LoginUser = async (req, res) => {
 };
 
 const checkOut = async (req, res) => {
+  console.log('Running')
   try {
     const sessions = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -78,7 +79,7 @@ const checkOut = async (req, res) => {
       cancel_url: "https://7girls-frontend.vercel.app/members",
     });
 
-    console.log('sessions status' sessions?.status || 'not found')
+  //  console.log('sessions status' sessions?.status || 'not found')
 
     console.log('sessions =>', sessions)
 
