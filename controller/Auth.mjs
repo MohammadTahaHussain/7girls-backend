@@ -7,6 +7,10 @@ import "../config/index.mjs";
 import User from "../modal/userSchema.mjs";
 import Stripe from "stripe";
 import Design from "../modal/designIdSchema.mjs";
+import { auth, db } from '../config/firebase.config.mjs'
+import { onSnapshot, query, collection, where, updateDoc, doc } from "firebase/firestore";
+import SessionIds from "../modal/sessionIds.mjs";
+
 const stripe = new Stripe('sk_test_51Nsoi4JNIfFBCw6D9VvsUIxl3IpIIfAMOkn9PaFHjBEzvVIi40S3OseeEYewmCU8afY6lF6X7jrEFxkIbrzlUFsX005xGS2rmi', {
   apiVersion: "2020-08-27",
 });
@@ -57,8 +61,75 @@ const LoginUser = async (req, res) => {
   return res.json({ status: "error", error: "Invalid Password" });
 };
 
+
+const handlePaymentStatus = async (req, res) => {
+  try {
+    const { session_id } = req.query;
+    const { uid } = req.query
+    const { plan } = req.query
+
+    if (!session_id || !uid || !plan) {
+      return res.status(404).send({message: 'Invalid request'})
+    }
+
+    let docId = null
+    const q = query(collection(db, "users"), where("uid", "==", uid));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const users = [];
+      querySnapshot.forEach((doc) => {
+        users.push({
+          data: doc.data(),
+          id: doc.id
+        });
+      });
+      if (users?.length) {
+        docId = users[0].id
+      }else{
+        res.status(400).send({message: 'user not found'})
+      }
+    });
+
+
+
+    // Retrieve the session using the Stripe API
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+
+    // Check the payment status and handle accordingly
+    if (session.payment_status === 'paid') {
+      console.log('Amount paid:', paymentIntent.amount_received);
+      // Payment was successful
+      const response = await SessionIds.create({
+        session_id
+      })
+
+      if (!response) {
+        return res.status(404).send({ message: 'beta baaz ajao' })
+      }
+
+      if (response) {
+        const docRef = doc(db, "users", docId);
+        await updateDoc(docRef, {
+          membership: {
+            status: true,
+            plan: plan,
+            session_id: session_id
+          }
+        });
+      }
+      return res.status(200).json({ status: 'success' });
+    } else {
+      // Payment failed or was canceled
+      console.log('Payment failed or canceled');
+      return res.status(200).json({ status: 'failed' });
+    }
+  } catch (error) {
+    // console.error('Error handling payment status:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 const checkOut = async (req, res) => {
-  console.log('Running')
   try {
     const sessions = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -75,14 +146,11 @@ const checkOut = async (req, res) => {
           quantity: item.quantity,
         };
       }),
-      success_url: `http://7girls-frontend.vercel.app/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.items[0]?.name}&uid=${req.body?.items[0]?.uid}`,
-      cancel_url: "https://7girls-frontend.vercel.app/members",
+      success_url: `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.items[0]?.name}&uid=${req.body?.items[0]?.uid}`,
+      cancel_url: "http://localhost:3000/members",
+      // success_url: `http://7girls-frontend.vercel.app/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.items[0]?.name}&uid=${req.body?.items[0]?.uid}`,
+      // cancel_url: "https://7girls-frontend.vercel.app/members",      
     });
-
-  //  console.log('sessions status' sessions?.status || 'not found')
-
-    console.log('sessions =>', sessions)
-
     res.json({ url: sessions.url });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -90,4 +158,6 @@ const checkOut = async (req, res) => {
 };
 
 
-export { createUser, LoginUser, checkOut };
+
+
+export { createUser, LoginUser, checkOut, handlePaymentStatus };

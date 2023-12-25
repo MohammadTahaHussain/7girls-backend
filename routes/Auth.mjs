@@ -1,6 +1,6 @@
 import express from "express";
 const router = express.Router();
-import { createUser, LoginUser, checkOut } from "../controller/Auth.mjs";
+import { createUser, LoginUser, checkOut, handlePaymentStatus } from "../controller/Auth.mjs";
 
 router.get('/', (req, res) => {
   res.status(200).send({
@@ -19,6 +19,9 @@ router.post("/login", async (req, res) => {
 
 router.post("/checkout", async (req, res) => {
   checkOut(req, res);
+});
+router.post("/session", async (req, res) => {
+  handlePaymentStatus(req, res);
 });
 
 export default router;
