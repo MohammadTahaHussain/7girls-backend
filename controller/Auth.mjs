@@ -146,8 +146,8 @@ const checkOut = async (req, res) => {
           quantity: item.quantity,
         };
       }),
-      success_url: `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.items[0]?.name}&uid=${req.body?.items[0]?.uid}`,
-      cancel_url: "http://localhost:3000/members",
+      success_url: `https://7girls-frontend.vercel.app/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.items[0]?.name}&uid=${req.body?.items[0]?.uid}`,
+      cancel_url: "https://7girls-frontend.vercel.app/members",
       // success_url: `http://7girls-frontend.vercel.app/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.items[0]?.name}&uid=${req.body?.items[0]?.uid}`,
       // cancel_url: "https://7girls-frontend.vercel.app/members",      
     });
